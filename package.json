@@ -1,0 +1,57 @@
+{
+  "name": "n8n-nodes-rdstation-marketing",
+  "version": "1.0.0",
+  "description": "Community node for RD Station Marketing integration with n8n",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n-nodes",
+    "rdstation",
+    "marketing-automation",
+    "crm",
+    "leads"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/yourusername/n8n-nodes-rdstation-marketing",
+  "author": {
+    "name": "Your Name",
+    "email": "your.email@example.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/n8n-nodes-rdstation-marketing.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && gulp build:icons",
+    "dev": "tsc --watch",
+    "format": "prettier nodes credentials --write",
+    "lint": "eslint nodes credentials package.json",
+    "lintfix": "eslint nodes credentials package.json --fix",
+    "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/RdStationMarketingOAuth2Api.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/RdStationMarketing/RdStationMarketing.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.29.0",
+    "eslint-plugin-n8n-nodes-base": "^1.11.0",
+    "gulp": "^4.0.2",
+    "n8n-core": "^0.140.0",
+    "n8n-workflow": "^0.120.0",
+    "prettier": "^2.7.1",
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "n8n-workflow": "^0.120.0"
+  }
+}
