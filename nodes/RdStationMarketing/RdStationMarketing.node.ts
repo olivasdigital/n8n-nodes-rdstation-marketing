@@ -605,8 +605,24 @@ export class RdStationMarketing implements INodeType {
 							...additionalFields,
 						};
 
+						// Tag fields, split comma-separated tags into an array
 						if (additionalFields.tags) {
 							body.tags = additionalFields.tags.split(',').map((tag: string) => tag.trim());
+						}
+
+						// Prepare Birth Date field
+						if (additionalFields.birthdate) {
+							body.birthdate = additionalFields.birthdate.split(' ')[0]; // Format to YYYY-MM-DD
+						}
+
+						// Prepare custom fields
+						if ( Array.isArray(body.customFields.field) ) {
+							body.customFields.field.forEach((item: any) => {
+								if (!item.name.startsWith('cf_')) 
+									item.name = 'cf_' + item.name; // Ensure custom fields start with 'cf_'
+								body[item.name] = item.value;
+							});
+							delete body.customFields;
 						}
 
 						const responseData = await rdStationApiRequest.call(
