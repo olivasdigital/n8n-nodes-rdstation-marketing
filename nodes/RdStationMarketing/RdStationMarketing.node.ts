@@ -627,6 +627,7 @@ export class RdStationMarketing implements INodeType {
 						const identifier = this.getNodeParameter('identifier', i) as | 'uuid' | 'email';
 						const email = this.getNodeParameter('email', i) as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i) as any;
+
 						const body: any = {
 							...additionalFields,
 						};
@@ -656,6 +657,15 @@ export class RdStationMarketing implements INodeType {
 						// Prepare Birth Date field
 						if (additionalFields.birthdate) {
 							body.birthdate = additionalFields.birthdate.split(' ')[0]; // Format to YYYY-MM-DD
+						}
+
+						if ( Array.isArray(body.customFields.field) ) {
+							body.customFields.field.forEach((item: any) => {
+								if (!item.name.startsWith('cf_')) 
+									item.name = 'cf_' + item.name; // Ensure custom fields start with 'cf_'
+								body[item.name] = item.value;
+							});
+							delete body.customFields;
 						}
 
 						const responseData = await rdStationApiRequest.call(
