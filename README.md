@@ -30,7 +30,7 @@ npm install n8n-nodes-rdstation-marketing
 
 ### 1. Criar Aplicativo no RD Station
 
-1. Acesse [RD Station App Store](https://appstore.rdstation.com.br/pt-BR/publisher)
+1. Acesse [RD Station App Store](https://appstore.rdstation.com/pt-BR/publisher)
 2. Crie um novo aplicativo
 3. Configure as URLs de callback:
    - Para desenvolvimento: `http://localhost:5678/rest/oauth2-credential/callback`
@@ -73,40 +73,19 @@ npm install n8n-nodes-rdstation-marketing
 - Opção para retornar todos os contatos ou limitar a quantidade
 - Paginação automática para grandes volumes
 
-### Eventos
-
-#### Criar Evento de Conversão
-
-```json
-{
-  "event_type": "CONVERSION",
-  "email": "contato@exemplo.com"
-}
-```
-
-#### Criar Evento Personalizado
-
-```json
-{
-  "event_type": "CUSTOM_EVENT",
-  "email": "contato@exemplo.com"
-}
-```
-
-## Recursos Suportados
+## Recursos
 
 ### Contatos
 - ✅ Criar/Atualizar contato
 - ✅ Buscar contato por email
 - ✅ Buscar contato por UUID
 - ✅ Listar todos os contatos
-- ✅ Campos personalizados (nome, telefone, cidade, etc.)
-- ✅ Tags
+- 🔄 Tags
 
 ### Eventos
-- ✅ Criar evento de conversão
-- ✅ Criar evento personalizado
-- ✅ Associar eventos a contatos
+- 🔄 Criar evento de conversão (em desenvolvimento)
+- 🔄 Criar evento personalizado (em desenvolvimento)
+- 🔄 Associar eventos a contatos (em desenvolvimento)
 
 ### Leads
 - 🔄 Informações do funil (em desenvolvimento)
@@ -129,7 +108,7 @@ O node possui tratamento robusto de erros da API do RD Station Marketing:
 
 ```bash
 # Clonar o repositório
-git clone https://github.com/yourusername/n8n-nodes-rdstation-marketing.git
+git clone https://github.com/olivasdigital/n8n-nodes-rdstation-marketing.git
 cd n8n-nodes-rdstation-marketing
 
 # Instalar dependências
@@ -178,9 +157,9 @@ npm link n8n-nodes-rdstation-marketing
 Contribuições são bem-vindas! Por favor:
 
 1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
+2. Crie uma branch para sua feature (`git checkout -b feat/nova-funcionalidade`)
 3. Commit suas mudanças (`git commit -am 'Adiciona nova funcionalidade'`)
-4. Push para a branch (`git push origin feature/nova-funcionalidade`)
+4. Push para a branch (`git push origin feat/nova-funcionalidade`)
 5. Abra um Pull Request
 
 ## Licença
@@ -190,14 +169,14 @@ Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICE
 ## Suporte
 
 - 📖 [Documentação da API RD Station Marketing](https://developers.rdstation.com/reference/introducao-rdsm)
-- 🐛 [Reportar Issues](https://github.com/yourusername/n8n-nodes-rdstation-marketing/issues)
-- 💬 [Discussões](https://github.com/yourusername/n8n-nodes-rdstation-marketing/discussions)
+- 🐛 [Reportar Issues](https://github.com/olivasdigital/n8n-nodes-rdstation-marketing/issues)
+- 💬 [Discussões](https://github.com/olivasdigital/n8n-nodes-rdstation-marketing/discussions)
 
 ## Changelog
 
 ### v1.0.0
 - ✅ Autenticação OAuth2 com RD Station Marketing
-- ✅ Operações de contatos (CRUD)
-- ✅ Criação de eventos
-- ✅ Tratamento de erros
-- ✅ Validação de dados
+- ✅ Consultar contato
+- ✅ Criar contato
+- ✅ Atualizar contato
+- ✅ Listar contatos

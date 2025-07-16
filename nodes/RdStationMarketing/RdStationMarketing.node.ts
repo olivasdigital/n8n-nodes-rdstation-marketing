@@ -1,15 +1,18 @@
 import {
 	IExecuteFunctions,
+	ILoadOptionsFunctions,
 	INodeExecutionData,
+	INodePropertyOptions,
 	INodeType,
 	INodeTypeDescription,
 	NodeConnectionType,
-	NodeOperationError,
 } from 'n8n-workflow';
 
 import {
-	rdStationMarketingApiRequest,
-	rdStationMarketingApiRequestAllItems,
+	rdStationApiRequest,
+	rdStationApiRequestAllItems,
+	keysToSnakeCase,
+	sortOptionParameters,
 } from './GenericFunctions';
 
 export class RdStationMarketing implements INodeType {
@@ -43,22 +46,27 @@ export class RdStationMarketing implements INodeType {
 						name: 'Contact',
 						value: 'contact',
 					},
-					{
-						name: 'Event',
-						value: 'event',
-					},
+					/* Under development
 					{
 						name: 'Lead',
 						value: 'lead',
 					},
 					{
-						name: 'Opportunity',
-						value: 'opportunity',
+						name: 'Event',
+						value: 'event',
 					},
+					{
+						name: 'Funnel',
+						value: 'funnel',
+					},
+					*/
 				],
 				default: 'contact',
 			},
-			// Contact operations
+
+			// ----------------------------------
+			// ========== OPERATIONS ============
+			// ----------------------------------
 			{
 				displayName: 'Operation',
 				name: 'operation',
@@ -71,15 +79,21 @@ export class RdStationMarketing implements INodeType {
 				},
 				options: [
 					{
-						name: 'Create or Update',
-						value: 'createOrUpdate',
-						description: 'Create or update a contact',
-						action: 'Create or update a contact',
+						name: 'Create',
+						value: 'create',
+						description: 'Create a new contact',
+						action: 'Create a contact',
+					},
+					{
+						name: 'Update',
+						value: 'update',
+						description: 'Update a contact',
+						action: 'Update a contact',
 					},
 					{
 						name: 'Get',
 						value: 'get',
-						description: 'Get a contact by email or UUID',
+						description: 'Get a contact',
 						action: 'Get a contact',
 					},
 					{
@@ -89,36 +103,8 @@ export class RdStationMarketing implements INodeType {
 						action: 'Get all contacts',
 					},
 				],
-				default: 'createOrUpdate',
+				default: 'create',
 			},
-			// Event operations
-			{
-				displayName: 'Operation',
-				name: 'operation',
-				type: 'options',
-				noDataExpression: true,
-				displayOptions: {
-					show: {
-						resource: ['event'],
-					},
-				},
-				options: [
-					{
-						name: 'Create Conversion',
-						value: 'createConversion',
-						description: 'Create a conversion event',
-						action: 'Create a conversion event',
-					},
-					{
-						name: 'Create Custom',
-						value: 'createCustom',
-						description: 'Create a custom event',
-						action: 'Create a custom event',
-					},
-				],
-				default: 'createConversion',
-			},
-			// Lead operations
 			{
 				displayName: 'Operation',
 				name: 'operation',
@@ -131,15 +117,26 @@ export class RdStationMarketing implements INodeType {
 				},
 				options: [
 					{
-						name: 'Get Funnel',
-						value: 'getFunnel',
-						description: 'Get lead funnel information',
-						action: 'Get lead funnel information',
+						name: 'Create',
+						value: 'create',
+						description: 'Create a new lead',
+						action: 'Create a lead',
+					},
+					{
+						name: 'Update',
+						value: 'update',
+						description: 'Update a lead',
+						action: 'Update a lead',
+					},
+					{
+						name: 'Get',
+						value: 'get',
+						description: 'Get a lead',
+						action: 'Get a lead',
 					},
 				],
-				default: 'getFunnel',
+				default: 'create',
 			},
-			// Opportunity operations
 			{
 				displayName: 'Operation',
 				name: 'operation',
@@ -147,53 +144,151 @@ export class RdStationMarketing implements INodeType {
 				noDataExpression: true,
 				displayOptions: {
 					show: {
-						resource: ['opportunity'],
+						resource: ['event'],
 					},
 				},
 				options: [
 					{
-						name: 'Mark as Won',
-						value: 'markAsWon',
-						description: 'Mark opportunity as won',
-						action: 'Mark opportunity as won',
-					},
-					{
-						name: 'Mark as Lost',
-						value: 'markAsLost',
-						description: 'Mark opportunity as lost',
-						action: 'Mark opportunity as lost',
+						name: 'Create',
+						value: 'create',
+						description: 'Create a new event',
+						action: 'Create an event',
 					},
 				],
-				default: 'markAsWon',
+				default: 'create',
 			},
-			// Contact fields
 			{
-				displayName: 'Contact Email',
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['funnel'],
+					},
+				},
+				options: [
+					{
+						name: 'Get All',
+						value: 'getAll',
+						description: 'Get all funnels',
+						action: 'Get all funnels',
+					},
+				],
+				default: 'getAll',
+			},
+
+			// ----------------------------------
+			//         Contacts fields
+			// ----------------------------------
+			// Doc: https://developers.rdstation.com/reference/contatos
+
+			{
+				displayName: 'Contact identifier',
+				name: 'identifier',
+				type: 'options',
+				options: [
+					{
+						name: 'UUID',
+						value: 'uuid',
+					},
+					{
+						name: 'Email',
+						value: 'email',
+					},
+				],
+				default: 'email',
+				description: 'It\'s possible to consult the Contacts, using the Lead\'s uuid or email',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['contact'],
+						operation: ['get', 'update','delete','tag'],
+					},
+				},
+			},
+			// Email field for contact:create
+			{
+				displayName: 'Email',
 				name: 'email',
 				type: 'string',
-				placeholder: 'contact@example.com',
+				required: true,
 				displayOptions: {
 					show: {
 						resource: ['contact'],
-						operation: ['createOrUpdate', 'get'],
+						operation: ['create'],
 					},
 				},
 				default: '',
-				required: true,
-				description: 'Email of the contact',
+				placeholder: 'name@email.com',
+				description: 'Contact email address',
 			},
+			// Email field for contact:get, contact:delete, contact:tag, contact:update
 			{
-				displayName: 'Contact UUID',
-				name: 'uuid',
+				displayName: 'Email',
+				name: 'email',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['contact'],
+						operation: ['get','delete','tag','update'],
+						identifier: ['email'],
+					},
+				},
+				default: '',
+				placeholder: 'name@email.com',
+				description: 'Contact email address',
+			},
+			// Email field as optional for contact:update by UUID
+			{
+				displayName: 'Email',
+				name: 'email',
 				type: 'string',
 				displayOptions: {
 					show: {
 						resource: ['contact'],
-						operation: ['get'],
+						operation: ['update'],
+						identifier: ['uuid'],
 					},
 				},
 				default: '',
-				description: 'UUID of the contact (alternative to email)',
+				placeholder: 'name@email.com',
+				description: 'Contact email address',
+			},
+			{
+				displayName: 'UUID',
+				name: 'uuid',
+				type: 'string',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['contact'],
+						operation: ['get','delete','tag','update'],
+						identifier: ['uuid'],
+					},
+				},
+				default: '',
+				placeholder: 'a111bc22-1234-1234-a1a1-ab12c345d67f',
+				description: 'Unique contact UUID',
+			},
+			{
+				displayName: 'Sgmentation',
+				name: 'segmentation_id',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getSegmentationOptions',
+				},
+				default: '',
+				description:
+					'Name of the field to set. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['contact'],
+						operation: ['getAll'],
+					},
+				},
 			},
 			{
 				displayName: 'Additional Fields',
@@ -203,7 +298,7 @@ export class RdStationMarketing implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['contact'],
-						operation: ['createOrUpdate'],
+						operation: ['create', 'update'],
 					},
 				},
 				default: {},
@@ -213,112 +308,209 @@ export class RdStationMarketing implements INodeType {
 						name: 'name',
 						type: 'string',
 						default: '',
-						description: 'Name of the contact',
+						description: 'Contact full name',
+						placeholder: 'John Doe',
 					},
 					{
 						displayName: 'Job Title',
 						name: 'job_title',
 						type: 'string',
 						default: '',
-						description: 'Job title of the contact',
+						description: 'Contact job position or title',
+						placeholder: 'CEO',
 					},
 					{
-						displayName: 'Phone',
-						name: 'mobile_phone',
+						displayName: 'Birthday Date',
+						name: 'birthdate',
+						type: 'dateTime',
+						default: '',
+						placeholder: '29901-11-23',
+					},
+					{
+						displayName: 'Bio',
+						name: 'bio',
 						type: 'string',
 						default: '',
-						description: 'Mobile phone of the contact',
+						description: 'Notes about this contact',
 					},
 					{
 						displayName: 'Website',
 						name: 'website',
 						type: 'string',
 						default: '',
-						description: 'Website of the contact',
+						placeholder: 'https://example.com',
 					},
 					{
-						displayName: 'Personal Phone',
+						displayName: 'Phone',
 						name: 'personal_phone',
 						type: 'string',
 						default: '',
-						description: 'Personal phone of the contact',
+						placeholder: '+5511999999999',
+					},
+					{
+						displayName: 'Mobile Phone',
+						name: 'mobile_phone',
+						type: 'string',
+						default: '',
+						placeholder: '+5511999999999',
 					},
 					{
 						displayName: 'City',
 						name: 'city',
 						type: 'string',
 						default: '',
-						description: 'City of the contact',
 					},
 					{
 						displayName: 'State',
 						name: 'state',
 						type: 'string',
 						default: '',
-						description: 'State of the contact',
 					},
 					{
 						displayName: 'Country',
 						name: 'country',
 						type: 'string',
 						default: '',
-						description: 'Country of the contact',
+					},
+					{
+						displayName: 'Twitter',
+						name: 'twitter',
+						type: 'string',
+						default: '',
+						placeholder: 'https://x.com/username',
+					},
+					{
+						displayName: 'Facebook',
+						name: 'facebook',
+						type: 'string',
+						default: '',
+						placeholder: 'https://facebook.com/username',
+					},
+					{
+						displayName: 'Linkedin',
+						name: 'linkedin',
+						type: 'string',
+						default: '',
+						placeholder: 'https://linkedin.com/in/username',
 					},
 					{
 						displayName: 'Tags',
 						name: 'tags',
 						type: 'string',
 						default: '',
-						description: 'Tags separated by commas',
+						description: 'Comma-separated list of tags. If updating a contact, the tags are replaced by the new tags provided.',
+					},
+					{
+						displayName: 'Custom Fields',
+						name: 'customFields',
+						placeholder: 'Add Custom Field',
+						description: 'Adds a custom field to set also values which have not been predefined',
+						type: 'fixedCollection',
+						typeOptions: {
+							multipleValues: true,
+						},
+						default: {},
+						options: [
+							{
+								name: 'field',
+								displayName: 'Field',
+								values: [
+									{
+										displayName: 'Field Name or ID',
+										name: 'name',
+										type: 'options',
+										typeOptions: {
+											loadOptionsMethod: 'getContactCustomFields',
+										},
+										default: '',
+										description:
+											'Name of the field to set. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+									},
+									{
+										displayName: 'Property Value',
+										name: 'value',
+										type: 'string',
+										default: '',
+										description: 'Value of the property to set',
+									},
+								],
+							},
+						],
 					},
 				],
+			},
+			// Lead fields
+			{
+				displayName: 'Email',
+				name: 'leadEmail',
+				type: 'string',
+				displayOptions: {
+					show: {
+						resource: ['lead'],
+						operation: ['create', 'update'],
+					},
+				},
+				default: '',
+				placeholder: 'name@email.com',
+				description: 'Lead email address',
+			},
+			{
+				displayName: 'Lead ID',
+				name: 'leadId',
+				type: 'string',
+				displayOptions: {
+					show: {
+						resource: ['lead'],
+						operation: ['get', 'update'],
+					},
+				},
+				default: '',
+				description: 'Lead ID',
 			},
 			// Event fields
 			{
 				displayName: 'Event Type',
-				name: 'event_type',
-				type: 'string',
+				name: 'eventType',
+				type: 'options',
 				displayOptions: {
 					show: {
 						resource: ['event'],
-						operation: ['createConversion', 'createCustom'],
+						operation: ['create'],
 					},
 				},
+				options: [
+					{
+						name: 'Conversion',
+						value: 'CONVERSION',
+					},
+					{
+						name: 'Page View',
+						value: 'PAGE_VIEW',
+					},
+					{
+						name: 'Email Opened',
+						value: 'EMAIL_OPENED',
+					},
+					{
+						name: 'Email Clicked',
+						value: 'EMAIL_CLICKED',
+					},
+				],
 				default: 'CONVERSION',
-				description: 'Type of event to create',
 			},
 			{
 				displayName: 'Event Email',
-				name: 'email',
+				name: 'eventEmail',
 				type: 'string',
-				placeholder: 'contact@example.com',
 				displayOptions: {
 					show: {
 						resource: ['event'],
-						operation: ['createConversion', 'createCustom'],
+						operation: ['create'],
 					},
 				},
 				default: '',
-				required: true,
-				description: 'Email of the contact for the event',
-			},
-			// Limit options
-			{
-				displayName: 'Limit',
-				name: 'limit',
-				type: 'number',
-				displayOptions: {
-					show: {
-						resource: ['contact'],
-						operation: ['getAll'],
-					},
-				},
-				typeOptions: {
-					minValue: 1,
-					maxValue: 200,
-				},
-				default: 50,
-				description: 'Max number of results to return',
+				placeholder: 'name@email.com',
+				description: 'Email associated with the event',
 			},
 			{
 				displayName: 'Return All',
@@ -333,19 +525,78 @@ export class RdStationMarketing implements INodeType {
 				default: false,
 				description: 'Whether to return all results or only up to a given limit',
 			},
+			{
+				displayName: 'Limit',
+				name: 'limit',
+				type: 'number',
+				displayOptions: {
+					show: {
+						resource: ['contact'],
+						operation: ['getAll'],
+						returnAll: [false],
+					},
+				},
+				typeOptions: {
+					minValue: 1,
+					maxValue: 500,
+				},
+				default: 100,
+				description: 'Max number of results to return',
+			},
 		],
+	};
+
+	methods = {
+		loadOptions: {
+			// Get all the Contact Custom Fields to display them to user so that they can
+			// select them easily
+			async getContactCustomFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const returnData: INodePropertyOptions[] = [];
+				const { fields } = await rdStationApiRequest.call(this, 'GET', '/platform/contacts/fields', {});
+				for (const field of fields) {
+					if (field.custom_field) {
+						returnData.push({
+							name: field.label.default + " (" + field.api_identifier + ")",
+							value: field.api_identifier,
+						});
+					}
+				}
+				return sortOptionParameters(returnData);
+			},
+
+			// List segmentations to list contacts
+			async getSegmentationOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const returnData: INodePropertyOptions[] = [];
+				const { segmentations } = await rdStationApiRequest.call(this, 'GET', '/platform/segmentations', {}, {}, { headers: { 'Accept': 'application/json' } });
+				for (const segmentation of segmentations) {
+					if (segmentation.standard)
+						segmentation.name += " (standard)";
+
+					returnData.push({
+						name: segmentation.name,
+						value: segmentation.id,
+					});
+				}
+				return sortOptionParameters(returnData);
+			},
+		},
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
-		const resource = this.getNodeParameter('resource', 0) as string;
-		const operation = this.getNodeParameter('operation', 0) as string;
+		const length = items.length;
+		
+		const resource = this.getNodeParameter('resource', 0);
+		const operation = this.getNodeParameter('operation', 0);
 
-		for (let i = 0; i < items.length; i++) {
+		for (let i = 0; i < length; i++) {
 			try {
 				if (resource === 'contact') {
-					if (operation === 'createOrUpdate') {
+					if (operation === 'create') {
+						// ----------------------------------
+						//         contact:create
+						// ----------------------------------
 						const email = this.getNodeParameter('email', i) as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i) as any;
 
@@ -358,89 +609,171 @@ export class RdStationMarketing implements INodeType {
 							body.tags = additionalFields.tags.split(',').map((tag: string) => tag.trim());
 						}
 
-						const responseData = await rdStationMarketingApiRequest.call(
+						const responseData = await rdStationApiRequest.call(
+							this,
+							'POST',
+							'/platform/contacts',
+							keysToSnakeCase(body),
+						);
+
+						returnData.push({
+							json: responseData,
+							pairedItem: { item: i },
+						});
+					} else if (operation === 'update') {
+						// ----------------------------------
+						//         contact:update
+						// ----------------------------------
+						const identifier = this.getNodeParameter('identifier', i) as | 'uuid' | 'email';
+						const email = this.getNodeParameter('email', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as any;
+						const body: any = {
+							...additionalFields,
+						};
+						var identifier_value = "" as string;
+
+						if (identifier === 'email') {
+							identifier_value = this.getNodeParameter('email', i) as string;
+							if (!identifier_value) {
+								throw new Error('Email is required to update a contact by email');
+							}
+						}
+						else if (identifier === 'uuid') {
+							identifier_value = this.getNodeParameter('uuid', i) as string;
+							if (!identifier_value) {
+								throw new Error('UUID is required to update a contact by UUID');
+							}
+							if (email) {
+								body.email = email; // Email is optional when updating by UUID
+							}
+						}
+
+						// Tag fields, split comma-separated tags into an array
+						if (additionalFields.tags) {
+							body.tags = additionalFields.tags.split(',').map((tag: string) => tag.trim());
+						}
+
+						// Prepare Birth Date field
+						if (additionalFields.birthdate) {
+							body.birthdate = additionalFields.birthdate.split(' ')[0]; // Format to YYYY-MM-DD
+						}
+
+						const responseData = await rdStationApiRequest.call(
 							this,
 							'PATCH',
-							'/platform/contacts',
-							body,
+							`/platform/contacts/${identifier}:${identifier_value}`,
+							keysToSnakeCase(body),
 						);
+						delete responseData?.links;
 
 						returnData.push({
 							json: responseData,
-							pairedItem: {
-								item: i,
-							},
+							pairedItem: { item: i },
 						});
 					} else if (operation === 'get') {
-						const email = this.getNodeParameter('email', i) as string;
-						const uuid = this.getNodeParameter('uuid', i) as string;
+						// ----------------------------------
+						//         contact:get
+						// ----------------------------------
+						const identifier = this.getNodeParameter('identifier', i) as | 'uuid' | 'email';
+						var identifier_value = "" as string;
 
-						let endpoint = '';
-						if (uuid) {
-							endpoint = `/platform/contacts/${uuid}`;
-						} else {
-							endpoint = `/platform/contacts/email:${email}`;
+						if (identifier === 'email') {
+							identifier_value = this.getNodeParameter('email', i) as string;
+							if (!identifier_value) {
+								throw new Error('Email is required to get a contact by email');
+							}
+						}
+						else if (identifier === 'uuid') {
+							identifier_value = this.getNodeParameter('uuid', i) as string;
+							if (!identifier_value) {
+								throw new Error('UUID is required to get a contact by UUID');
+							}
 						}
 
-						const responseData = await rdStationMarketingApiRequest.call(
+						const responseData = await rdStationApiRequest.call(
 							this,
 							'GET',
-							endpoint,
+							`/platform/contacts/${identifier}:${identifier_value}`,
 						);
+						delete responseData?.links;
 
 						returnData.push({
 							json: responseData,
-							pairedItem: {
-								item: i,
-							},
+							pairedItem: { item: i },
 						});
 					} else if (operation === 'getAll') {
-						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
-						const limit = this.getNodeParameter('limit', i) as number;
+						// ----------------------------------
+						//         contact:getAll
+						// ----------------------------------
+						const returnAll = this.getNodeParameter('returnAll', i);
+						const page_size = this.getNodeParameter('limit', i, 100) as number;
+						const segmentation_id = this.getNodeParameter('segmentation_id', i) as number;
 
+						let responseData;
 						if (returnAll) {
-							const responseData = await rdStationMarketingApiRequestAllItems.call(
+							responseData = await rdStationApiRequestAllItems.call(
 								this,
+								'contacts',
 								'GET',
-								'/platform/contacts',
-								{},
+								`/platform/segmentations/${segmentation_id}/contacts`,
 							);
-
-							returnData.push(...responseData.map((item: any) => ({
-								json: item,
-								pairedItem: {
-									item: i,
-								},
-							})));
 						} else {
-							const responseData = await rdStationMarketingApiRequest.call(
+							responseData = await rdStationApiRequest.call(
 								this,
 								'GET',
-								'/platform/contacts',
+								`/platform/segmentations/${segmentation_id}/contacts`,
 								{},
-								{ limit },
+								{ page_size },
 							);
+						}
+						if (responseData?.contacts)
+								responseData = responseData.contacts;
 
-							returnData.push(...responseData.contacts.map((item: any) => ({
-								json: item,
-								pairedItem: {
-									item: i,
-								},
-							})));
+						if (Array.isArray(responseData)) {
+							responseData.forEach((contact: any) => {
+								returnData.push({
+									json: contact,
+									pairedItem: { item: i },
+								});
+							});
+						} else {
+							returnData.push({
+								json: responseData,
+								pairedItem: { item: i },
+							});
 						}
 					}
-				} else if (resource === 'event') {
-					if (operation === 'createConversion' || operation === 'createCustom') {
-						const email = this.getNodeParameter('email', i) as string;
-						const eventType = this.getNodeParameter('event_type', i) as string;
+				} else if (resource === 'lead') {
+					if (operation === 'create') {
+						const email = this.getNodeParameter('leadEmail', i) as string;
 
-						const body: any = {
-							event_type: eventType,
-							event_family: 'CDP',
+						const body = {
 							email,
 						};
 
-						const responseData = await rdStationMarketingApiRequest.call(
+						const responseData = await rdStationApiRequest.call(
+							this,
+							'POST',
+							'/platform/leads',
+							keysToSnakeCase(body),
+						);
+
+						returnData.push({
+							json: responseData,
+							pairedItem: { item: i },
+						});
+					}
+				} else if (resource === 'event') {
+					if (operation === 'create') {
+						const eventType = this.getNodeParameter('eventType', i) as string;
+						const email = this.getNodeParameter('eventEmail', i) as string;
+
+						const body = {
+							event_type: eventType,
+							email,
+						};
+
+						const responseData = await rdStationApiRequest.call(
 							this,
 							'POST',
 							'/platform/events',
@@ -449,21 +782,30 @@ export class RdStationMarketing implements INodeType {
 
 						returnData.push({
 							json: responseData,
-							pairedItem: {
-								item: i,
-							},
+							pairedItem: { item: i },
+						});
+					}
+				} else if (resource === 'funnel') {
+					if (operation === 'getAll') {
+						const responseData = await rdStationApiRequest.call(
+							this,
+							'GET',
+							'/platform/funnels',
+						);
+
+						returnData.push({
+							json: responseData,
+							pairedItem: { item: i },
 						});
 					}
 				}
-			} catch (error) {
+			} catch (error: unknown) {
 				if (this.continueOnFail()) {
 					returnData.push({
 						json: {
-							error: error.message,
+							error: error instanceof Error ? error.message : 'Unknown error',
 						},
-						pairedItem: {
-							item: i,
-						},
+						pairedItem: { item: i },
 					});
 					continue;
 				}
