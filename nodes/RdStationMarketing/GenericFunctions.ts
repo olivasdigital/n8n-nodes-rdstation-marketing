@@ -15,7 +15,7 @@ export async function rdStationApiRequest(
 	resource: string,
 	body: any = {},
 	qs: any = {},
-	option: any = { headers: { 'Accept': 'application/json' } },
+	option: any = { headers: { 'Accept': 'application/json', 'content-type': 'application/json' } },
 ): Promise<any> {
 	const baseUrl = 'https://api.rd.services';
 	
@@ -135,6 +135,35 @@ export function processWebhookData(data: any): any {
 	}
 
 	return data;
+}
+
+export function prepareLeadData(obj: any): any {
+	if (obj === null || typeof obj !== 'object') {
+		return obj;
+	}
+	
+	// Tag fields, split comma-separated tags into an array
+	if (obj.tags) {
+		obj.tags = obj.tags.split(',').map((tag: string) => tag.trim());
+	}
+
+	// Prepare Birth Date field
+	if (obj.birthdate) {
+		obj.birthdate = obj.birthdate.split(' ')[0]; // Format to YYYY-MM-DD
+	}
+
+	// Prepare custom fields
+	if ( obj.customFields && obj.customFields.field && Array.isArray(obj.customFields.field) ) {
+		obj.customFields.field.forEach((item: any) => {
+			if (!item.name.startsWith('cf_')) 
+				item.name = 'cf_' + item.name; // Ensure custom fields start with 'cf_'
+			obj[item.name] = item.value;
+		});
+		delete obj.customFields;
+	}
+	console.log('Prepared Lead Data:', obj);
+	
+	return obj;
 }
 
 export function sortOptionParameters(

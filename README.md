@@ -80,7 +80,7 @@ npm install n8n-nodes-rdstation-marketing
 - ✅ Buscar contato por email
 - ✅ Buscar contato por UUID
 - ✅ Listar todos os contatos
-- 🔄 Tags
+- 🔄 Tags (em desenvolvimento)
 
 ### Eventos
 - 🔄 Criar evento de conversão (em desenvolvimento)

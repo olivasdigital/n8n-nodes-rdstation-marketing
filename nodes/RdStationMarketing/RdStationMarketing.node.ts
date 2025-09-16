@@ -13,6 +13,7 @@ import {
 	rdStationApiRequestAllItems,
 	keysToSnakeCase,
 	sortOptionParameters,
+	prepareLeadData,
 } from './GenericFunctions';
 
 export class RdStationMarketing implements INodeType {
@@ -46,15 +47,11 @@ export class RdStationMarketing implements INodeType {
 						name: 'Contact',
 						value: 'contact',
 					},
-					/* Under development
-					{
-						name: 'Lead',
-						value: 'lead',
-					},
 					{
 						name: 'Event',
 						value: 'event',
 					},
+					/* Under development
 					{
 						name: 'Funnel',
 						value: 'funnel',
@@ -112,70 +109,33 @@ export class RdStationMarketing implements INodeType {
 				noDataExpression: true,
 				displayOptions: {
 					show: {
-						resource: ['lead'],
-					},
-				},
-				options: [
-					{
-						name: 'Create',
-						value: 'create',
-						description: 'Create a new lead',
-						action: 'Create a lead',
-					},
-					{
-						name: 'Update',
-						value: 'update',
-						description: 'Update a lead',
-						action: 'Update a lead',
-					},
-					{
-						name: 'Get',
-						value: 'get',
-						description: 'Get a lead',
-						action: 'Get a lead',
-					},
-				],
-				default: 'create',
-			},
-			{
-				displayName: 'Operation',
-				name: 'operation',
-				type: 'options',
-				noDataExpression: true,
-				displayOptions: {
-					show: {
 						resource: ['event'],
 					},
 				},
 				options: [
 					{
-						name: 'Create',
-						value: 'create',
-						description: 'Create a new event',
-						action: 'Create an event',
+						name: 'Standard Conversion',
+						value: 'conversion',
+						description: 'Registar a standard conversion event',
+						action: 'Standard Conversion',
 					},
 				],
-				default: 'create',
+				default: 'conversion',
 			},
+			// Event fields
 			{
-				displayName: 'Operation',
-				name: 'operation',
-				type: 'options',
-				noDataExpression: true,
+				displayName: 'Conversion Identifier',
+				name: 'conversion_identifier',
+				type: 'string',
+				required: true,
 				displayOptions: {
 					show: {
-						resource: ['funnel'],
+						resource: ['event'],
+						operation: ['conversion'],
 					},
 				},
-				options: [
-					{
-						name: 'Get All',
-						value: 'getAll',
-						description: 'Get all funnels',
-						action: 'Get all funnels',
-					},
-				],
-				default: 'getAll',
+				default: '',
+				description: 'The name of the conversion event',
 			},
 
 			// ----------------------------------
@@ -215,8 +175,8 @@ export class RdStationMarketing implements INodeType {
 				required: true,
 				displayOptions: {
 					show: {
-						resource: ['contact'],
-						operation: ['create'],
+						resource: ['contact','event'],
+						operation: ['create','conversion'],
 					},
 				},
 				default: '',
@@ -297,8 +257,8 @@ export class RdStationMarketing implements INodeType {
 				placeholder: 'Add Field',
 				displayOptions: {
 					show: {
-						resource: ['contact'],
-						operation: ['create', 'update'],
+						resource: ['contact','event'],
+						operation: ['create', 'update','conversion'],
 					},
 				},
 				default: {},
@@ -439,79 +399,6 @@ export class RdStationMarketing implements INodeType {
 					},
 				],
 			},
-			// Lead fields
-			{
-				displayName: 'Email',
-				name: 'leadEmail',
-				type: 'string',
-				displayOptions: {
-					show: {
-						resource: ['lead'],
-						operation: ['create', 'update'],
-					},
-				},
-				default: '',
-				placeholder: 'name@email.com',
-				description: 'Lead email address',
-			},
-			{
-				displayName: 'Lead ID',
-				name: 'leadId',
-				type: 'string',
-				displayOptions: {
-					show: {
-						resource: ['lead'],
-						operation: ['get', 'update'],
-					},
-				},
-				default: '',
-				description: 'Lead ID',
-			},
-			// Event fields
-			{
-				displayName: 'Event Type',
-				name: 'eventType',
-				type: 'options',
-				displayOptions: {
-					show: {
-						resource: ['event'],
-						operation: ['create'],
-					},
-				},
-				options: [
-					{
-						name: 'Conversion',
-						value: 'CONVERSION',
-					},
-					{
-						name: 'Page View',
-						value: 'PAGE_VIEW',
-					},
-					{
-						name: 'Email Opened',
-						value: 'EMAIL_OPENED',
-					},
-					{
-						name: 'Email Clicked',
-						value: 'EMAIL_CLICKED',
-					},
-				],
-				default: 'CONVERSION',
-			},
-			{
-				displayName: 'Event Email',
-				name: 'eventEmail',
-				type: 'string',
-				displayOptions: {
-					show: {
-						resource: ['event'],
-						operation: ['create'],
-					},
-				},
-				default: '',
-				placeholder: 'name@email.com',
-				description: 'Email associated with the event',
-			},
 			{
 				displayName: 'Return All',
 				name: 'returnAll',
@@ -543,6 +430,7 @@ export class RdStationMarketing implements INodeType {
 				default: 100,
 				description: 'Max number of results to return',
 			},
+
 		],
 	};
 
@@ -593,6 +481,9 @@ export class RdStationMarketing implements INodeType {
 		for (let i = 0; i < length; i++) {
 			try {
 				if (resource === 'contact') {
+					// ----------------------------------
+					//         CONTACT OPERATIONS
+					// ----------------------------------
 					if (operation === 'create') {
 						// ----------------------------------
 						//         contact:create
@@ -605,31 +496,11 @@ export class RdStationMarketing implements INodeType {
 							...additionalFields,
 						};
 
-						// Tag fields, split comma-separated tags into an array
-						if (additionalFields.tags) {
-							body.tags = additionalFields.tags.split(',').map((tag: string) => tag.trim());
-						}
-
-						// Prepare Birth Date field
-						if (additionalFields.birthdate) {
-							body.birthdate = additionalFields.birthdate.split(' ')[0]; // Format to YYYY-MM-DD
-						}
-
-						// Prepare custom fields
-						if ( Array.isArray(body.customFields.field) ) {
-							body.customFields.field.forEach((item: any) => {
-								if (!item.name.startsWith('cf_')) 
-									item.name = 'cf_' + item.name; // Ensure custom fields start with 'cf_'
-								body[item.name] = item.value;
-							});
-							delete body.customFields;
-						}
-
 						const responseData = await rdStationApiRequest.call(
 							this,
 							'POST',
 							'/platform/contacts',
-							keysToSnakeCase(body),
+							keysToSnakeCase(prepareLeadData(body)),
 						);
 
 						returnData.push({
@@ -665,30 +536,11 @@ export class RdStationMarketing implements INodeType {
 							}
 						}
 
-						// Tag fields, split comma-separated tags into an array
-						if (additionalFields.tags) {
-							body.tags = additionalFields.tags.split(',').map((tag: string) => tag.trim());
-						}
-
-						// Prepare Birth Date field
-						if (additionalFields.birthdate) {
-							body.birthdate = additionalFields.birthdate.split(' ')[0]; // Format to YYYY-MM-DD
-						}
-
-						if ( Array.isArray(body.customFields.field) ) {
-							body.customFields.field.forEach((item: any) => {
-								if (!item.name.startsWith('cf_')) 
-									item.name = 'cf_' + item.name; // Ensure custom fields start with 'cf_'
-								body[item.name] = item.value;
-							});
-							delete body.customFields;
-						}
-
 						const responseData = await rdStationApiRequest.call(
 							this,
 							'PATCH',
 							`/platform/contacts/${identifier}:${identifier_value}`,
-							keysToSnakeCase(body),
+							keysToSnakeCase(prepareLeadData(body)),
 						);
 						delete responseData?.links;
 
@@ -769,54 +621,38 @@ export class RdStationMarketing implements INodeType {
 							});
 						}
 					}
-				} else if (resource === 'lead') {
-					if (operation === 'create') {
-						const email = this.getNodeParameter('leadEmail', i) as string;
-
-						const body = {
-							email,
-						};
-
-						const responseData = await rdStationApiRequest.call(
-							this,
-							'POST',
-							'/platform/leads',
-							keysToSnakeCase(body),
-						);
-
-						returnData.push({
-							json: responseData,
-							pairedItem: { item: i },
-						});
-					}
 				} else if (resource === 'event') {
-					if (operation === 'create') {
-						const eventType = this.getNodeParameter('eventType', i) as string;
-						const email = this.getNodeParameter('eventEmail', i) as string;
+					// ----------------------------------
+					//         EVENT OPERATIONS
+					// ----------------------------------
+					if (operation === 'conversion') {
+						// ----------------------------------
+						//         event:conversion
+						// ----------------------------------
+						const email = this.getNodeParameter('email', i) as string;
+						const conversion_identifier = this.getNodeParameter('conversion_identifier', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as any;
+						const event_type = "conversion";
+						const payload: any = {
+								email: email,
+									conversion_identifier: conversion_identifier,
+									...additionalFields,
+							};
+						console.log('RD Station Payload:', payload);
 
 						const body = {
-							event_type: eventType,
-							email,
+							event_type: event_type.toUpperCase(),
+							event_family: "CDP",
+							payload: payload,
 						};
+						console.log('RD Station Event Body:', body);
 
 						const responseData = await rdStationApiRequest.call(
 							this,
 							'POST',
 							'/platform/events',
-							body,
-						);
-
-						returnData.push({
-							json: responseData,
-							pairedItem: { item: i },
-						});
-					}
-				} else if (resource === 'funnel') {
-					if (operation === 'getAll') {
-						const responseData = await rdStationApiRequest.call(
-							this,
-							'GET',
-							'/platform/funnels',
+							keysToSnakeCase(prepareLeadData(body)),
+							{ event_type: event_type },
 						);
 
 						returnData.push({
