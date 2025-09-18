@@ -6,6 +6,7 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	NodeConnectionType,
+	NodeOperationError,
 } from 'n8n-workflow';
 
 import {
@@ -94,10 +95,10 @@ export class RdStationMarketing implements INodeType {
 						action: 'Get a contact',
 					},
 					{
-						name: 'Get All',
+						name: 'Get Many',
 						value: 'getAll',
-						description: 'Get all contacts',
-						action: 'Get all contacts',
+						description: 'Get many contacts',
+						action: 'Get many contacts',
 					},
 				],
 				default: 'create',
@@ -117,7 +118,7 @@ export class RdStationMarketing implements INodeType {
 						name: 'Standard Conversion',
 						value: 'conversion',
 						description: 'Registar a standard conversion event',
-						action: 'Standard Conversion',
+						action: 'Standard conversion',
 					},
 				],
 				default: 'conversion',
@@ -144,7 +145,7 @@ export class RdStationMarketing implements INodeType {
 			// Doc: https://developers.rdstation.com/reference/contatos
 
 			{
-				displayName: 'Contact identifier',
+				displayName: 'Contact Identifier',
 				name: 'identifier',
 				type: 'options',
 				options: [
@@ -233,7 +234,7 @@ export class RdStationMarketing implements INodeType {
 				description: 'Unique contact UUID',
 			},
 			{
-				displayName: 'Sgmentation',
+				displayName: 'Sgmentation Name or ID',
 				name: 'segmentation_id',
 				type: 'options',
 				typeOptions: {
@@ -264,20 +265,11 @@ export class RdStationMarketing implements INodeType {
 				default: {},
 				options: [
 					{
-						displayName: 'Name',
-						name: 'name',
+						displayName: 'Bio',
+						name: 'bio',
 						type: 'string',
 						default: '',
-						description: 'Contact full name',
-						placeholder: 'John Doe',
-					},
-					{
-						displayName: 'Job Title',
-						name: 'job_title',
-						type: 'string',
-						default: '',
-						description: 'Contact job position or title',
-						placeholder: 'CEO',
+						description: 'Notes about this contact',
 					},
 					{
 						displayName: 'Birthday Date',
@@ -287,42 +279,8 @@ export class RdStationMarketing implements INodeType {
 						placeholder: '29901-11-23',
 					},
 					{
-						displayName: 'Bio',
-						name: 'bio',
-						type: 'string',
-						default: '',
-						description: 'Notes about this contact',
-					},
-					{
-						displayName: 'Website',
-						name: 'website',
-						type: 'string',
-						default: '',
-						placeholder: 'https://example.com',
-					},
-					{
-						displayName: 'Phone',
-						name: 'personal_phone',
-						type: 'string',
-						default: '',
-						placeholder: '+5511999999999',
-					},
-					{
-						displayName: 'Mobile Phone',
-						name: 'mobile_phone',
-						type: 'string',
-						default: '',
-						placeholder: '+5511999999999',
-					},
-					{
 						displayName: 'City',
 						name: 'city',
-						type: 'string',
-						default: '',
-					},
-					{
-						displayName: 'State',
-						name: 'state',
 						type: 'string',
 						default: '',
 					},
@@ -331,34 +289,6 @@ export class RdStationMarketing implements INodeType {
 						name: 'country',
 						type: 'string',
 						default: '',
-					},
-					{
-						displayName: 'Twitter',
-						name: 'twitter',
-						type: 'string',
-						default: '',
-						placeholder: 'https://x.com/username',
-					},
-					{
-						displayName: 'Facebook',
-						name: 'facebook',
-						type: 'string',
-						default: '',
-						placeholder: 'https://facebook.com/username',
-					},
-					{
-						displayName: 'Linkedin',
-						name: 'linkedin',
-						type: 'string',
-						default: '',
-						placeholder: 'https://linkedin.com/in/username',
-					},
-					{
-						displayName: 'Tags',
-						name: 'tags',
-						type: 'string',
-						default: '',
-						description: 'Comma-separated list of tags. If updating a contact, the tags are replaced by the new tags provided.',
 					},
 					{
 						displayName: 'Custom Fields',
@@ -397,6 +327,77 @@ export class RdStationMarketing implements INodeType {
 							},
 						],
 					},
+					{
+						displayName: 'Facebook',
+						name: 'facebook',
+						type: 'string',
+						default: '',
+						placeholder: 'https://facebook.com/username',
+					},
+					{
+						displayName: 'Job Title',
+						name: 'job_title',
+						type: 'string',
+						default: '',
+						description: 'Contact job position or title',
+						placeholder: 'CEO',
+					},
+					{
+						displayName: 'Linkedin',
+						name: 'linkedin',
+						type: 'string',
+						default: '',
+						placeholder: 'https://linkedin.com/in/username',
+					},
+					{
+						displayName: 'Mobile Phone',
+						name: 'mobile_phone',
+						type: 'string',
+						default: '',
+						placeholder: '+5511999999999',
+					},
+					{
+						displayName: 'Name',
+						name: 'name',
+						type: 'string',
+						default: '',
+						description: 'Contact full name',
+						placeholder: 'John Doe',
+					},
+					{
+						displayName: 'Phone',
+						name: 'personal_phone',
+						type: 'string',
+						default: '',
+						placeholder: '+5511999999999',
+					},
+					{
+						displayName: 'State',
+						name: 'state',
+						type: 'string',
+						default: '',
+					},
+					{
+						displayName: 'Tags',
+						name: 'tags',
+						type: 'string',
+						default: '',
+						description: 'Comma-separated list of tags. If updating a contact, the tags are replaced by the new tags provided.',
+					},
+					{
+						displayName: 'Twitter',
+						name: 'twitter',
+						type: 'string',
+						default: '',
+						placeholder: 'https://x.com/username',
+					},
+					{
+						displayName: 'Website',
+						name: 'website',
+						type: 'string',
+						default: '',
+						placeholder: 'https://example.com',
+					},
 				],
 			},
 			{
@@ -425,9 +426,8 @@ export class RdStationMarketing implements INodeType {
 				},
 				typeOptions: {
 					minValue: 1,
-					maxValue: 500,
 				},
-				default: 100,
+				default: 50,
 				description: 'Max number of results to return',
 			},
 
@@ -523,13 +523,13 @@ export class RdStationMarketing implements INodeType {
 						if (identifier === 'email') {
 							identifier_value = this.getNodeParameter('email', i) as string;
 							if (!identifier_value) {
-								throw new Error('Email is required to update a contact by email');
+								throw new NodeOperationError(this.getNode(), 'Email is required to update a contact by email');
 							}
 						}
 						else if (identifier === 'uuid') {
 							identifier_value = this.getNodeParameter('uuid', i) as string;
 							if (!identifier_value) {
-								throw new Error('UUID is required to update a contact by UUID');
+								throw new NodeOperationError(this.getNode(), 'UUID is required to update a contact by UUID');
 							}
 							if (email) {
 								body.email = email; // Email is optional when updating by UUID
@@ -558,13 +558,13 @@ export class RdStationMarketing implements INodeType {
 						if (identifier === 'email') {
 							identifier_value = this.getNodeParameter('email', i) as string;
 							if (!identifier_value) {
-								throw new Error('Email is required to get a contact by email');
+								throw new NodeOperationError(this.getNode(), 'Email is required to get a contact by email');
 							}
 						}
 						else if (identifier === 'uuid') {
 							identifier_value = this.getNodeParameter('uuid', i) as string;
 							if (!identifier_value) {
-								throw new Error('UUID is required to get a contact by UUID');
+								throw new NodeOperationError(this.getNode(),'UUID is required to get a contact by UUID');
 							}
 						}
 
@@ -638,14 +638,12 @@ export class RdStationMarketing implements INodeType {
 									conversion_identifier: conversion_identifier,
 									...additionalFields,
 							};
-						console.log('RD Station Payload:', payload);
 
 						const body = {
 							event_type: event_type.toUpperCase(),
 							event_family: "CDP",
 							payload: payload,
 						};
-						console.log('RD Station Event Body:', body);
 
 						const responseData = await rdStationApiRequest.call(
 							this,

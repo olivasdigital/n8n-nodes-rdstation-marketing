@@ -1,4 +1,6 @@
-# n8n-nodes-rdstation-marketing
+![Banner image](https://github.com/user-attachments/assets/f9e3d3a4-16dd-4fc5-a8d3-a220e822cb55)
+
+# RD Station Marketing community node for n8n
 
 Este é um community node para n8n que permite integração com a API do RD Station Marketing.
 

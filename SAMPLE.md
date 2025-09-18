@@ -22,156 +22,111 @@ Antes de usar o node, você precisa configurar as credenciais OAuth2:
 
 ## Exemplos de Workflows
 
-### Workflow 1: Criar/Atualizar Contato
+### Workflow 1: Registrando conversão
 
 ```json
 {
-  "name": "Criar Contato RD Station",
   "nodes": [
     {
-      "parameters": {
-        "resource": "contact",
-        "operation": "createOrUpdate",
-        "email": "cliente@exemplo.com",
-        "additionalFields": {
-          "name": "João Silva",
-          "job_title": "Desenvolvedor",
-          "mobile_phone": "+5511999999999",
-          "city": "São Paulo",
-          "state": "SP",
-          "country": "Brasil",
-          "tags": "lead,interessado,developer"
-        }
-      },
-      "id": "rd-station-contact",
-      "name": "RD Station Marketing",
-      "type": "n8n-nodes-rdstation-marketing.rdStationMarketing",
-      "position": [250, 300],
-      "credentials": {
-        "rdStationMarketingOAuth2Api": {
-          "id": "1",
-          "name": "RD Station Marketing OAuth2 API"
-        }
-      }
-    }
-  ]
-}
-```
-
-### Workflow 2: Buscar Contato e Criar Evento
-
-```json
-{
-  "name": "Buscar Contato e Criar Evento",
-  "nodes": [
-    {
-      "parameters": {
-        "resource": "contact",
-        "operation": "get",
-        "email": "cliente@exemplo.com"
-      },
-      "id": "get-contact",
-      "name": "Buscar Contato",
-      "type": "n8n-nodes-rdstation-marketing.rdStationMarketing",
-      "position": [250, 300],
-      "credentials": {
-        "rdStationMarketingOAuth2Api": {
-          "id": "1",
-          "name": "RD Station Marketing OAuth2 API"
-        }
-      }
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "81364b51-2e7d-417e-8af6-e5586bd2776e",
+      "name": "When clicking ‘Execute workflow’"
     },
     {
       "parameters": {
         "resource": "event",
-        "operation": "createConversion",
-        "event_type": "CONVERSION",
-        "email": "={{$node['Buscar Contato'].json.email}}"
+        "conversion_identifier": "conversion-identifier",
+        "email": "cliente@exemplo.com",
+        "additionalFields": {}
       },
-      "id": "create-event",
-      "name": "Criar Evento",
       "type": "n8n-nodes-rdstation-marketing.rdStationMarketing",
-      "position": [450, 300],
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "f752dd41-a2ae-4f65-aed5-cd127308c0fd",
+      "name": "Standard Conversion",
       "credentials": {
         "rdStationMarketingOAuth2Api": {
           "id": "1",
-          "name": "RD Station Marketing OAuth2 API"
+          "name": "RD Station Marketing account"
         }
       }
     }
   ],
   "connections": {
-    "Buscar Contato": {
+    "When clicking ‘Execute workflow’": {
       "main": [
         [
           {
-            "node": "Criar Evento",
+            "node": "Standard Conversion",
             "type": "main",
             "index": 0
           }
         ]
       ]
     }
-  }
+  },
 }
 ```
 
-### Workflow 3: Sincronizar Contatos de Planilha
+### Workflow 2: Buscar Contato pelo e-mail
 
 ```json
 {
-  "name": "Sincronizar Contatos de Planilha",
   "nodes": [
     {
-      "parameters": {
-        "filePath": "/tmp/contatos.xlsx",
-        "options": {}
-      },
-      "id": "read-excel",
-      "name": "Ler Planilha",
-      "type": "n8n-nodes-base.microsoftExcel",
-      "position": [250, 300]
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "81364b51-2e7d-417e-8af6-e5586bd2776e",
+      "name": "When clicking ‘Execute workflow’"
     },
     {
       "parameters": {
-        "resource": "contact",
-        "operation": "createOrUpdate",
-        "email": "={{$json.email}}",
-        "additionalFields": {
-          "name": "={{$json.nome}}",
-          "job_title": "={{$json.cargo}}",
-          "mobile_phone": "={{$json.telefone}}",
-          "city": "={{$json.cidade}}",
-          "state": "={{$json.estado}}",
-          "country": "Brasil",
-          "tags": "planilha,importacao"
-        }
+        "operation": "get",
+        "email": "cliente@exemplo.com"
       },
-      "id": "sync-contacts",
-      "name": "Sincronizar Contatos",
       "type": "n8n-nodes-rdstation-marketing.rdStationMarketing",
-      "position": [450, 300],
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "98604ce6-5970-415f-a6bc-828f0c25116d",
+      "name": "Get a contact",
       "credentials": {
         "rdStationMarketingOAuth2Api": {
           "id": "1",
-          "name": "RD Station Marketing OAuth2 API"
+          "name": "RD Station Marketing account"
         }
       }
     }
   ],
   "connections": {
-    "Ler Planilha": {
+    "When clicking ‘Execute workflow’": {
       "main": [
         [
           {
-            "node": "Sincronizar Contatos",
+            "node": "Get a contact",
             "type": "main",
             "index": 0
           }
         ]
       ]
     }
-  }
+  },
 }
 ```
 
@@ -204,97 +159,6 @@ const contactData = {
 return [{ json: contactData }];
 ```
 
-### Processar Resposta da API
-
-```javascript
-// Node: Code (JavaScript)
-const response = $input.first().json;
-
-// Verificar se o contato foi criado/atualizado com sucesso
-if (response.uuid) {
-  console.log(`Contato processado com sucesso: ${response.uuid}`);
-  
-  // Preparar dados para próximo node
-  return [{
-    json: {
-      success: true,
-      contact_uuid: response.uuid,
-      contact_email: response.email,
-      message: 'Contato criado/atualizado com sucesso'
-    }
-  }];
-} else {
-  throw new Error('Falha ao processar contato');
-}
-```
-
-## Tratamento de Erros
-
-### Exemplo de Workflow com Tratamento de Erros
-
-```json
-{
-  "name": "Criar Contato com Tratamento de Erros",
-  "nodes": [
-    {
-      "parameters": {
-        "resource": "contact",
-        "operation": "createOrUpdate",
-        "email": "={{$json.email}}",
-        "continueOnFail": true
-      },
-      "id": "create-contact",
-      "name": "Criar Contato",
-      "type": "n8n-nodes-rdstation-marketing.rdStationMarketing",
-      "position": [250, 300],
-      "credentials": {
-        "rdStationMarketingOAuth2Api": {
-          "id": "1",
-          "name": "RD Station Marketing OAuth2 API"
-        }
-      },
-      "continueOnFail": true
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "string": [
-            {
-              "value1": "={{$json.error}}",
-              "operation": "isEmpty"
-            }
-          ]
-        }
-      },
-      "id": "check-success",
-      "name": "Verificar Sucesso",
-      "type": "n8n-nodes-base.if",
-      "position": [450, 300]
-    },
-    {
-      "parameters": {
-        "message": "Contato criado com sucesso!",
-        "options": {}
-      },
-      "id": "success-message",
-      "name": "Mensagem de Sucesso",
-      "type": "n8n-nodes-base.noOp",
-      "position": [650, 250]
-    },
-    {
-      "parameters": {
-        "message": "Erro ao criar contato: {{$json.error}}",
-        "options": {}
-      },
-      "id": "error-message",
-      "name": "Mensagem de Erro",
-      "type": "n8n-nodes-base.noOp",
-      "position": [650, 350]
-    }
-  ]
-}
-```
-
 ## Casos de Uso Comuns
 
 ### 1. Integração com Formulários Web
@@ -323,35 +187,56 @@ if (response.uuid) {
 
 ## Dicas e Boas Práticas
 
-### 1. Validação de Dados
+### 1. Validação de Email
 
-```javascript
-// Sempre validar email antes de enviar
-const email = $json.email;
-if (!email || !email.includes('@')) {
-  throw new Error('Email inválido');
+```json
+{
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "90a30a13-f988-42de-a2cc-2dc1bbcb7018",
+              "leftValue": "={{ (/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/).test($json.email) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "b2d4af9f-bd8f-43f0-8503-65bd51d3f9df",
+      "name": "validEmail"
+    }
+  ],
 }
 ```
 
-### 2. Tratamento de Tags
-
-```javascript
-// Normalizar tags antes de enviar
-const tags = $json.tags || '';
-const normalizedTags = tags
-  .split(',')
-  .map(tag => tag.trim().toLowerCase())
-  .filter(tag => tag.length > 0)
-  .join(',');
-```
-
-### 3. Rate Limiting
+### 2. Rate Limiting
 
 - O RD Station tem limites de requisições
 - Use delays entre requisições em lote
 - Implemente retry em caso de erro 429
 
-### 4. Logs e Monitoramento
+### 3. Logs e Monitoramento
 
 ```javascript
 // Sempre logar operações importantes
@@ -368,3 +253,5 @@ console.log(`Resultado: ${response.success ? 'Sucesso' : 'Falha'}`);
    - Verificar se o token não expirou
 
 2. **Email Inválido**
+  - Use um node IF ou Filter para validar se o email é válido
+  - RD Station não aceita conversões ou criação de leads sem email

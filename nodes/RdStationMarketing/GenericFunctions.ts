@@ -161,7 +161,6 @@ export function prepareLeadData(obj: any): any {
 		});
 		delete obj.customFields;
 	}
-	console.log('Prepared Lead Data:', obj);
 	
 	return obj;
 }
